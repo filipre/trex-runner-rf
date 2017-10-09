@@ -1,12 +1,10 @@
 // config
 const gamma = 0.9;
 const alpha = 0.1;
-const epsilon = 0.05;
+const epsilon = 0.01;
 const positive_award = 1;
 const negative_award = -1000;
-const fps = 20;
-
-
+const fps = 30;
 
 // helpers
 var randomNumber = function(min, max) {
@@ -176,12 +174,15 @@ var epsGreedy = function(epsilon, state) {
 };
 
 var qLearningUpdate = function(gamma, alpha, currentState, action, nextState, reward) {
-    console.log(nextState);
-    var targetNextState = reward + gamma * getMaxOfArray(["duck", "jump", "noop"].map(function(actionName, actionIndex) {
-        return getQValues(nextState)[actionIndex];
-    }));
-    setQValue(currentState, action, (1 - alpha) * getQValues(currentState)[action] + alpha * targetNextState);
-    console.log(getQValues(currentState));
+    try {
+        var targetNextState = reward + gamma * getMaxOfArray(["duck", "jump", "noop"].map(function(actionName, actionIndex) {
+            return getQValues(nextState)[actionIndex];
+        }));
+        setQValue(currentState, action, (1 - alpha) * getQValues(currentState)[action] + alpha * targetNextState);
+    } catch(e) {
+        console.log(getQValues(currentState));
+        console.log(getQValues(nextState));
+    }
 };
 
 
