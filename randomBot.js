@@ -16,9 +16,6 @@ var triggerEvent = function(type, keyCode) {
     document.dispatchEvent(e);
 };
 
-// states
-// RUNNING, JUMPING, DUCKING, CRASHED
-
 // key events (actions)
 var duck = function() {
     console.info(">duck");
@@ -46,7 +43,7 @@ var runBot = function() {
     // read environment
     console.info(Runner.instance_.tRex.status, Runner.instance_.tRex.xPos, Runner.instance_.tRex.yPos);
     Runner.instance_.horizon.obstacles.forEach(function(obstacle) {
-        console.info(obstacle.typeConfig.type, obstacle.xPos);
+        console.info(obstacle.typeConfig.type, obstacle.xPos, obstacle.yPos, obstacle.width);
     });
 
     // do action based on environment
@@ -55,6 +52,6 @@ var runBot = function() {
         return;
     }
 
-    actions[randomNumber(0, actions.length-1)]();
+    //actions[randomNumber(0, actions.length-1)]();
 };
 var intervalID = window.setInterval(runBot, 1000 / fps);

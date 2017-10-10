@@ -12,7 +12,8 @@ var randomNumber = function(min, max) {
 };
 const KEY = {
     DOWN: 40,
-    UP: 38
+    UP: 38,
+    SPACE: 32
 };
 var triggerEvent = function(type, keyCode) {
     var e = document.createEvent('HTMLEvents');
@@ -61,6 +62,11 @@ var noop = function() {
 }
 var actions = [noop, jump, duck];
 
+var restart = function() {
+    Runner.instance_.restart();
+    Runner.instance_.tRex.xPos = 24
+}
+
 
 
 var qValues = [];
@@ -69,30 +75,34 @@ var qValues = [];
 // OBSTACLE - TREX
 var initQValues = function() {
     ["WAITING", "CRASHED", "RUNNING", "JUMPING", "DUCKING"].forEach(function(status) {
-        ["NOTHING", "CACTUS_SMALL", "CACTUS_LARGE", "PTERODACTYL"].forEach(function(obstacle_type) {
-            for(var distanceX = 0; distanceX <= 30; ++distanceX) {
-                for(var distanceY = -4; distanceY <= 20; ++distanceY) {
-                    [1, 2, 3, 4].forEach(function(obstacle_size) {
-                        qValues[[status, obstacle_type, distanceX, distanceY, obstacle_size]] = [0, 0, 0];
-                    });
+        for (var speed = 30; speed <= 65; ++speed) {
+            ["NOTHING", "CACTUS_SMALL", "CACTUS_LARGE", "PTERODACTYL"].forEach(function(obstacle_type) {
+                for(var distanceX = -5; distanceX <= 30; ++distanceX) {
+                    for(var distanceY = -4; distanceY <= 20; ++distanceY) {
+                        [1, 2, 3].forEach(function(obstacle_size) {
+                            qValues[[status, speed, obstacle_type, distanceX, distanceY, obstacle_size]] = [0, 0, 0];
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
     });
 };
 
 var getQValues = function(state) {
     // console.log(state);
-    return qValues[[state.status, state.obstacle_type, state.distanceX, state.distanceY, state.obstacle_size]];
+    return qValues[[state.status, state.speed, state.obstacle_type, state.distanceX, state.distanceY, state.obstacle_size]];
 };
 var setQValue = function(state, action, value) {
-    qValues[[state.status, state.obstacle_type, state.distanceX, state.distanceY, state.obstacle_size]][action] = value;
+    qValues[[state.status, state.speed, state.obstacle_type, state.distanceX, state.distanceY, state.obstacle_size]][action] = value;
 };
 
+// TODO! make this a bit better
 var getStateFromTrex = function() {
     var tRexState = {};
 
     tRexState["status"] = Runner.instance_.tRex.status;
+    tRexState["speed"] = Math.floor(Runner.instance_.currentSpeed * 5.0);
 
     var obstacles = Runner.instance_.horizon.obstacles;
     if (obstacles.length === 0) {
@@ -235,19 +245,21 @@ var runBot = function() {
             console.log("TESTRUN");
             intervalID = window.setInterval(testRun, 1000 / fps);
         }
-        Runner.instance_.restart();
+        restart();
     }
 };
 
 var testRun = function() {
     var state = getStateFromTrex();
+    console.log(getQValues(state));
+    console.log(state);
     if (state.status === "WAITING") {
         return;
     }
     if (state.status === "CRASHED") {
         window.clearInterval(intervalID);
         intervalID = window.setInterval(runBot, 1000 / fps);
-        Runner.instance_.restart();
+        restart();
     }
     action = greedy(state);
     actions[action]();
