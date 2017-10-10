@@ -18,15 +18,15 @@ var triggerEvent = function(type, keyCode) {
 
 // key events (actions)
 var duck = function() {
-    console.info(">duck");
+    // console.info(">duck");
     if (Runner.instance_.tRex.status === "DUCKING") {
         triggerEvent('keyup', KEY.DOWN);
     } else {
         triggerEvent('keydown', KEY.DOWN);
     }
-}
+};
 var jump = function() {
-    console.info(">jump");
+    // console.info(">jump");
     if (Runner.instance_.tRex.status === "DUCKING") {
         return;
     }
@@ -34,24 +34,44 @@ var jump = function() {
     triggerEvent('keyup', KEY.UP);
 };
 var noop = function() {
-    console.info(">noop");
+    // console.info(">noop");
     return;
-}
+};
 var actions = [duck, jump, noop];
 
-var runBot = function() {
-    // read environment
-    console.info(Runner.instance_.tRex.status, Runner.instance_.tRex.xPos, Runner.instance_.tRex.yPos);
-    Runner.instance_.horizon.obstacles.forEach(function(obstacle) {
-        console.info(obstacle.typeConfig.type, obstacle.xPos, obstacle.yPos, obstacle.width);
-    });
+var restart = function() {
+    Runner.instance_.restart();
+    Runner.instance_.tRex.xPos = 24
+};
 
-    // do action based on environment
-    if (Runner.instance_.tRex.status === "CRASHED") {
-        Runner.instance_.restart(); // TODO: maybe use keyboard?
+var iteration = 1;
+var scores = [];
+
+var runBot = function() {
+    if (Runner.instance_.tRex.status === "WAITING") {
         return;
     }
 
-    //actions[randomNumber(0, actions.length-1)]();
+    if (Runner.instance_.tRex.status === "CRASHED") {
+        var score = Runner.instance_.distanceRan / 40;
+        scores.push(score);
+        console.log("Iteration #", iteration, ": ", score);
+        ++iteration;
+        if (iteration <= 100) {
+            restart();
+        } else {
+            window.clearInterval(intervalID);
+        }
+        return;
+    }
+
+    // read environment
+    // console.info(Runner.instance_.tRex.status, Runner.instance_.tRex.xPos, Runner.instance_.tRex.yPos);
+    // Runner.instance_.horizon.obstacles.forEach(function(obstacle) {
+    //     console.info(obstacle.typeConfig.type, obstacle.xPos, obstacle.yPos, obstacle.width);
+    // });
+
+    // do action based on environment
+    actions[randomNumber(0, actions.length-1)]();
 };
 var intervalID = window.setInterval(runBot, 1000 / fps);

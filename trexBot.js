@@ -3,7 +3,7 @@ const gamma = 0.9;
 const alpha = 0.1;
 const epsilon = 0.01;
 const positive_award = 1;
-const negative_award = -1000;
+const negative_award = -100;
 const fps = 30;
 
 // helpers
@@ -75,7 +75,7 @@ var qValues = [];
 // OBSTACLE - TREX
 var initQValues = function() {
     ["WAITING", "CRASHED", "RUNNING", "JUMPING", "DUCKING"].forEach(function(status) {
-        for (var speed = 30; speed <= 65; ++speed) {
+        for (var speed = 6; speed <= 13; ++speed) {
             ["NOTHING", "CACTUS_SMALL", "CACTUS_LARGE", "PTERODACTYL"].forEach(function(obstacle_type) {
                 for(var distanceX = -5; distanceX <= 30; ++distanceX) {
                     for(var distanceY = -4; distanceY <= 20; ++distanceY) {
@@ -102,7 +102,8 @@ var getStateFromTrex = function() {
     var tRexState = {};
 
     tRexState["status"] = Runner.instance_.tRex.status;
-    tRexState["speed"] = Math.floor(Runner.instance_.currentSpeed * 5.0);
+    // tRexState["speed"] = Math.floor(Runner.instance_.currentSpeed * 5.0);
+    tRexState["speed"] = Math.round(Runner.instance_.currentSpeed);
 
     var obstacles = Runner.instance_.horizon.obstacles;
     if (obstacles.length === 0) {
@@ -196,7 +197,7 @@ var qLearningUpdate = function(gamma, alpha, currentState, action, nextState, re
 };
 
 
-var currentState = getStateFromTrex();;
+var currentState = getStateFromTrex();
 var nextState;
 var action = 0; //noop
 
@@ -249,14 +250,18 @@ var runBot = function() {
     }
 };
 
+var scores = [];
 var testRun = function() {
     var state = getStateFromTrex();
     console.log(getQValues(state));
-    console.log(state);
+    // console.log(state);
     if (state.status === "WAITING") {
         return;
     }
     if (state.status === "CRASHED") {
+        var score = Runner.instance_.distanceRan / 40.0;
+        scores.push(score);
+        console.log("Iteration:", iteration, "Score:", score);
         window.clearInterval(intervalID);
         intervalID = window.setInterval(runBot, 1000 / fps);
         restart();
