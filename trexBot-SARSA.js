@@ -6,10 +6,10 @@
 */
 
 // config
-const gamma = 0.9; // discount factor
-const alpha = 0.2; // learning rate
-const epsilon = 0.03;
-const fps = 22;
+var gamma = 0.9; // discount factor
+var alpha = 0.05; // learning rate
+var epsilon = 0.01;
+var fps = 30;
 
 // helpers
 var randomNumber = function(min, max) {
@@ -25,26 +25,6 @@ var triggerEvent = function(type, keyCode) {
     e.initEvent(type, false, true);
     document.dispatchEvent(e);
 };
-// https://stackoverflow.com/questions/11301438/return-index-of-greatest-value-in-an-array
-var argMax = function(arr) {
-    if (arr.length === 0) { return -1; }
-    var max = arr[0];
-    var maxIndex = 0;
-    for (var i = 1; i < arr.length; i++) {
-        if (arr[i] > max) {
-            maxIndex = i;
-            max = arr[i];
-        }
-    }
-    return maxIndex;
-};
-// https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Math/max
-function max_array(numArray) {
-  return Math.max.apply(null, numArray);
-}
-function min_array(numArray) {
-  return Math.min.apply(null, numArray);
-}
 
 // key events (actions)
 var duck = function() {
@@ -77,7 +57,7 @@ var actions = {
 
 var restart = function() {
     Runner.instance_.restart();
-    Runner.instance_.tRex.xPos = 24;
+    Runner.instance_.tRex.xPos = 0;
 };
 
 // 8+1 Features: speed, status, xPos, yPos, 0_type, 0_xPos, 0_yPos, 0_size + bias
@@ -105,54 +85,35 @@ var restart = function() {
 var getTrexState = function() {
     var tRexState = {};
     // general
-    tRexState.bias = 1;
-    tRexState.running = (Runner.instance_.tRex.status === "RUNNING") ? 1 : 0;
     tRexState.jumping = (Runner.instance_.tRex.status === "JUMPING") ? 1 : 0;
     tRexState.ducking = (Runner.instance_.tRex.status === "DUCKING") ? 1 : 0;
     tRexState.speed = (Runner.instance_.currentSpeed - 6) / (13 - 6);
-    tRexState.xPos = (Runner.instance_.tRex.xPos - 0) / (650 - 0);
     tRexState.yPos = (Runner.instance_.tRex.yPos - 0) / (200 - 0);
     // no obstacle
-    tRexState.obstacle0_smallCactuls = 0;
-    tRexState.obstacle0_largeCactuls = 0;
-    tRexState.obstacle0_other = 0; // TODO !!
-    tRexState.obstacle0_xPos = 0;
-    tRexState.obstacle0_yPos = 0;
-    tRexState.obstacle0_simple = 0;
-    tRexState.obstacle0_double = 0;
-    tRexState.obstacle0_triple = 0;
+    tRexState.obstacle0_smallCactus = (-10 - -10) / (650 - -10);
+    tRexState.obstacle0_largeCactus = (-10 - -10) / (650 - -10);
     // with 1 obstacle
     if (Runner.instance_.horizon.obstacles.length > 0) {
-        tRexState.obstacle0_smallCactuls = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_SMALL") ? 1 : 0;
-        tRexState.obstacle0_largeCactuls = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_LARGE") ? 1 : 0;
-        tRexState.obstacle0_other = 0; // TODO !!
-        tRexState.obstacle0_xPos = (Runner.instance_.horizon.obstacles[0].xPos - 0) / (650 - 0);
-        tRexState.obstacle0_yPos = (Runner.instance_.horizon.obstacles[0].yPos - 0) / (200 - 0);
-        tRexState.obstacle0_simple = (Runner.instance_.horizon.obstacles[0].size === 1) ? 1 : 0;
-        tRexState.obstacle0_double = (Runner.instance_.horizon.obstacles[0].size === 2) ? 1 : 0;
-        tRexState.obstacle0_triple = (Runner.instance_.horizon.obstacles[0].size === 3) ? 1 : 0;
+        tRexState.obstacle0_smallCactus = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_SMALL") ? (Runner.instance_.horizon.obstacles[0].xPos - -10) / (650 - -10) : 0;
+        tRexState.obstacle0_largeCactus = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_LARGE") ? (Runner.instance_.horizon.obstacles[0].xPos - -10) / (650 - -10) : 0;
     }
     return tRexState;
 };
-
-// [1, state.bias, state.running, state.jumping, state.ducking, state.speed, state.xPos, state.yPos, state.obstacle0_smallCactuls, state.obstacle0_largeCactuls, state.obstacle0_other, state.obstacle0_xPos, state.obstacle0_yPos, state.obstacle0_simple, state.obstacle0_double, state.obstacle0_triple, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-// [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.bias, state.running, state.jumping, state.ducking, state.speed, state.xPos, state.yPos, state.obstacle0_smallCactuls, state.obstacle0_largeCactuls, state.obstacle0_other, state.obstacle0_xPos, state.obstacle0_yPos, state.obstacle0_simple, state.obstacle0_double, state.obstacle0_triple, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-// [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.bias, state.running, state.jumping, state.ducking, state.speed, state.xPos, state.yPos, state.obstacle0_smallCactuls, state.obstacle0_largeCactuls, state.obstacle0_other, state.obstacle0_xPos, state.obstacle0_yPos, state.obstacle0_simple, state.obstacle0_double, state.obstacle0_triple];
 
 // Our basis functions: F_i
 var features = function(state, action) {
     switch(action) {
         case "noop":
-            return [state.bias, state.running, state.jumping, state.ducking, state.speed, state.xPos, state.yPos, state.obstacle0_smallCactuls, state.obstacle0_largeCactuls, state.obstacle0_other, state.obstacle0_xPos, state.obstacle0_yPos, state.obstacle0_simple, state.obstacle0_double, state.obstacle0_triple, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            return [1, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus, state.obstacle0_largeCactus, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         case "jump":
-            return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.bias, state.running, state.jumping, state.ducking, state.speed, state.xPos, state.yPos, state.obstacle0_smallCactuls, state.obstacle0_largeCactuls, state.obstacle0_other, state.obstacle0_xPos, state.obstacle0_yPos, state.obstacle0_simple, state.obstacle0_double, state.obstacle0_triple, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            return [1, 0, 0, 0, 0, 0, 0, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus, state.obstacle0_largeCactus, 0, 0, 0, 0, 0, 0];
         case "duck":
-            return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.bias, state.running, state.jumping, state.ducking, state.speed, state.xPos, state.yPos, state.obstacle0_smallCactuls, state.obstacle0_largeCactuls, state.obstacle0_other, state.obstacle0_xPos, state.obstacle0_yPos, state.obstacle0_simple, state.obstacle0_double, state.obstacle0_triple];
+            return [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus, state.obstacle0_largeCactus];
     }
 };
 
 // learnable parameters w_i, initialized to zero
-var weights = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+var weights = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 // linear function Q(s, a) parameterized by weights w
 // Q(s, a) = 1 * w_0 + F_1 * w_1 + ... + F_n * w_n
@@ -171,11 +132,10 @@ var delta = function(state, action, reward, statePrime, actionPrime) {
 };
 
 // update our weights to improve behaviour
-var updateWeights = function(oldState, oldAction, reward, newState, newAction) {
-    var myDelta = delta(oldState, oldAction, reward, newState, newAction);
-    var myFeatures = features(oldState, oldAction);
+var updateWeights = function(state, action, target) {
+    var myFeatures = features(state, action);
     for (var i=0; i<weights.length; i++) {
-        weights[i] = weights[i] + alpha * myDelta * myFeatures[i];
+        weights[i] = weights[i] + (alpha * target * myFeatures[i]);
     }
 };
 
@@ -192,7 +152,7 @@ var greedy = function(state) {
     if (q_duck >= q_noop && q_duck >= q_jump) {
         return "duck";
     }
-}
+};
 
 var epsGreedy = function(state) {
     if (Math.random() < epsilon) {
@@ -211,7 +171,7 @@ var observeReward = function() {
     return 0;
 };
 
-var currentState, currentAction, reward, nextState, nextAction;
+var currentState, currentAction, reward, nextState, nextAction, target;
 currentState = getTrexState();
 currentAction = epsGreedy(currentState);
 
@@ -225,23 +185,24 @@ var algorithm = function() {
 
     // observe reward and new state
     reward = observeReward();
+
     nextState = getTrexState();
+    nextAction = epsGreedy(nextState);
+
+    // check if terminal state or not
+    if (Runner.instance_.tRex.status === "CRASHED") {
+        target = -1;
+        console.log(weights);
+        restart(); // sample new initial state
+        nextState = getTrexState();
+    } else {
+        target = delta(currentState, currentAction, reward, nextState, nextAction);
+    }
 
     // update weights by using next Action based on policy
-    nextAction = epsGreedy(nextState);
-    updateWeights(currentState, currentAction, reward, nextState, nextAction);
+    updateWeights(currentState, currentAction, target);
 
     currentState = nextState;
     currentAction = nextAction;
-
-    // if we crashed, restart app but don't reset parameters ofcourse
-    if (Runner.instance_.tRex.status === "CRASHED") {
-        restart();
-    }
 };
 window.setInterval(algorithm, 1000 / fps);
-
-var getStatus = function() {
-    console.log(weights);
-};
-window.setInterval(getStatus, 5000);
