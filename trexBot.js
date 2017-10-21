@@ -2,6 +2,7 @@
 const gamma = 0.9;
 const alpha = 0.1;
 const epsilon = 0.01;
+
 const positive_award = 1;
 const negative_award = -100;
 const fps = 30;
@@ -47,7 +48,7 @@ var duck = function() {
     } else {
         triggerEvent('keydown', KEY.DOWN);
     }
-}
+};
 var jump = function() {
     // console.info(">jump");
     if (Runner.instance_.tRex.status === "DUCKING") {
@@ -65,7 +66,7 @@ var actions = [noop, jump, duck];
 var restart = function() {
     Runner.instance_.restart();
     Runner.instance_.tRex.xPos = 24
-}
+};
 
 
 

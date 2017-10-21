@@ -6,15 +6,18 @@
 */
 
 // config
-var gamma = 0.9; // discount factor
-var alpha = 0.05; // learning rate
-var epsilon = 0.01;
+var gamma = 0.99; // discount factor
+var alpha = 0.1; // learning rate
+var epsilon = 0.1;
 var fps = 30;
 
 // helpers
 var randomNumber = function(min, max) {
     return Math.floor((Math.random() * (max-min+1)) + min);
 };
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 const KEY = {
     DOWN: 40,
     UP: 38
@@ -90,12 +93,20 @@ var getTrexState = function() {
     tRexState.speed = (Runner.instance_.currentSpeed - 6) / (13 - 6);
     tRexState.yPos = (Runner.instance_.tRex.yPos - 0) / (200 - 0);
     // no obstacle
-    tRexState.obstacle0_smallCactus = (-10 - -10) / (650 - -10);
-    tRexState.obstacle0_largeCactus = (-10 - -10) / (650 - -10);
+    tRexState.obstacle0_smallCactus_1 = 0;
+    tRexState.obstacle0_smallCactus_2 = 0;
+    tRexState.obstacle0_smallCactus_3 = 0;
+    tRexState.obstacle0_largeCactus_1 = 0;
+    tRexState.obstacle0_largeCactus_2 = 0;
+    tRexState.obstacle0_largeCactus_3 = 0;
     // with 1 obstacle
     if (Runner.instance_.horizon.obstacles.length > 0) {
-        tRexState.obstacle0_smallCactus = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_SMALL") ? (Runner.instance_.horizon.obstacles[0].xPos - -10) / (650 - -10) : 0;
-        tRexState.obstacle0_largeCactus = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_LARGE") ? (Runner.instance_.horizon.obstacles[0].xPos - -10) / (650 - -10) : 0;
+        tRexState.obstacle0_smallCactus_1 = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_SMALL" && Runner.instance_.horizon.obstacles[0].size === 1) ? (Runner.instance_.horizon.obstacles[0].xPos - -20) / (650 - -20) : 0;
+        tRexState.obstacle0_smallCactus_2 = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_SMALL" && Runner.instance_.horizon.obstacles[0].size === 2) ? (Runner.instance_.horizon.obstacles[0].xPos - -20) / (650 - -20) : 0;
+        tRexState.obstacle0_smallCactus_3 = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_SMALL" && Runner.instance_.horizon.obstacles[0].size === 3) ? (Runner.instance_.horizon.obstacles[0].xPos - -20) / (650 - -20) : 0;
+        tRexState.obstacle0_largeCactus_1 = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_LARGE" && Runner.instance_.horizon.obstacles[0].size === 1) ? (Runner.instance_.horizon.obstacles[0].xPos - -20) / (650 - -20) : 0;
+        tRexState.obstacle0_largeCactus_2 = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_LARGE" && Runner.instance_.horizon.obstacles[0].size === 2) ? (Runner.instance_.horizon.obstacles[0].xPos - -20) / (650 - -20) : 0;
+        tRexState.obstacle0_largeCactus_3 = (Runner.instance_.horizon.obstacles[0].typeConfig.type === "CACTUS_LARGE" && Runner.instance_.horizon.obstacles[0].size === 3) ? (Runner.instance_.horizon.obstacles[0].xPos - -20) / (650 - -20) : 0;
     }
     return tRexState;
 };
@@ -104,16 +115,16 @@ var getTrexState = function() {
 var features = function(state, action) {
     switch(action) {
         case "noop":
-            return [1, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus, state.obstacle0_largeCactus, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            return [1, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus_1, state.obstacle0_smallCactus_2, state.obstacle0_smallCactus_3, state.obstacle0_largeCactus_1, state.obstacle0_largeCactus_2, state.obstacle0_largeCactus_3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         case "jump":
-            return [1, 0, 0, 0, 0, 0, 0, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus, state.obstacle0_largeCactus, 0, 0, 0, 0, 0, 0];
+            return [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus_1, state.obstacle0_smallCactus_2, state.obstacle0_smallCactus_3, state.obstacle0_largeCactus_1, state.obstacle0_largeCactus_2, state.obstacle0_largeCactus_3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         case "duck":
-            return [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus, state.obstacle0_largeCactus];
+            return [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, state.jumping, state.ducking, state.speed, state.yPos, state.obstacle0_smallCactus_1, state.obstacle0_smallCactus_2, state.obstacle0_smallCactus_3, state.obstacle0_largeCactus_1, state.obstacle0_largeCactus_2, state.obstacle0_largeCactus_3];
     }
 };
 
 // learnable parameters w_i, initialized to zero
-var weights = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+var weights = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 // linear function Q(s, a) parameterized by weights w
 // Q(s, a) = 1 * w_0 + F_1 * w_1 + ... + F_n * w_n
@@ -143,6 +154,11 @@ var greedy = function(state) {
     var q_noop = Q_weights(state, "noop");
     var q_jump = Q_weights(state, "jump");
     var q_duck = Q_weights(state, "duck");
+    console.log("(noop, jump, duck)", Math.round(q_noop * 100) / 100, Math.round(q_jump * 100) / 100, Math.round(q_duck * 100) / 100);
+
+    // if ((Math.round(q_jump * 100) / 100) > 3) {
+    //     console.log(Math.round(q_jump * 100) / 100);
+    // }
     if (q_noop >= q_jump && q_noop >= q_duck) {
         return "noop";
     }
@@ -164,45 +180,60 @@ var epsGreedy = function(state) {
     }
 };
 
+var oldScore = 0;
+var toReturn;
 var observeReward = function() {
-    if (Runner.instance_.tRex.status === "CRASHED") {
-        return -1;
+    // var toReturn = (Runner.instance_.distanceRan - oldScore) / 40.0;
+    // oldScore =  Runner.instance_.distanceRan;
+    //
+    // return toReturn;
+    if (Runner.instance_.horizon.obstacles.length <= 0) {
+        return 100;
+    } else {
+        return Runner.instance_.horizon.obstacles[0].xPos;
     }
-    return 0;
+    //
+    // return 1;
 };
 
 var currentState, currentAction, reward, nextState, nextAction, target;
 currentState = getTrexState();
 currentAction = epsGreedy(currentState);
 
-var algorithm = function() {
-    if (Runner.instance_.playing === false && Runner.instance_.crashed !== true) {
-        return; // don't start yet, window is not active
-    }
+async function algorithm() {
+    while(true) {
+        await sleep(1000 / fps);
 
-    // carry out action
-    actions[currentAction]();
+        if (Runner.instance_.playing === false && Runner.instance_.crashed === false) {
+            continue; // don't start yet, window is not active
+        }
 
-    // observe reward and new state
-    reward = observeReward();
+        // carry out action
+        actions[currentAction]();
 
-    nextState = getTrexState();
-    nextAction = epsGreedy(nextState);
+        // observe reward and new state
+        reward = observeReward();
 
-    // check if terminal state or not
-    if (Runner.instance_.tRex.status === "CRASHED") {
-        target = -1;
-        console.log(weights);
-        restart(); // sample new initial state
         nextState = getTrexState();
-    } else {
-        target = delta(currentState, currentAction, reward, nextState, nextAction);
+        nextAction = epsGreedy(nextState);
+
+        // check if terminal state or not
+        if (Runner.instance_.tRex.status === "CRASHED") {
+            console.log(" ======== dead ======== ");
+            // target = -1 * Runner.instance_.distanceRan / 40.0 - 1;
+            target = -1 * fps;
+            restart(); // sample new initial state
+            nextState = getTrexState();
+        } else {
+            target = delta(currentState, currentAction, reward, nextState, nextAction);
+        }
+
+        // update weights by using next Action based on policy
+        updateWeights(currentState, currentAction, target);
+
+        currentState = nextState;
+        currentAction = nextAction;
     }
+}
 
-    // update weights by using next Action based on policy
-    updateWeights(currentState, currentAction, target);
-
-    currentState = nextState;
-    currentAction = nextAction;
-};
-window.setInterval(algorithm, 1000 / fps);
+algorithm();
